@@ -99,6 +99,8 @@ typedef struct URLProtocol {
     const char *default_whitelist;
 } URLProtocol;
 
+// for url
+void av_register_protocol(const URLProtocol * p);
 /**
  * Create a URLContext for accessing to the resource indicated by
  * url, but do not initiate the connection yet.

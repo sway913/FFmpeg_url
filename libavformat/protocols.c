@@ -73,6 +73,27 @@ extern const URLProtocol ff_libzmq_protocol;
 
 #include "libavformat/protocol_list.c"
 
+#define AV_URL_PROTOCOL_MAX_NUM 100
+extern const URLProtocol *url_protocols_ext[AV_URL_PROTOCOL_MAX_NUM] = {
+    NULL};
+
+void av_register_protocol(const URLProtocol *p)
+{
+    int i = 0;
+    for (i = AV_URL_PROTOCOL_MAX_NUM - 2; i >= 0; i--)
+    {
+        if (i == AV_URL_PROTOCOL_MAX_NUM - 2 && url_protocols_ext[i])
+        {
+            return;
+        }
+        else if (i < AV_URL_PROTOCOL_MAX_NUM - 2)
+        {
+            url_protocols_ext[i + 1] = url_protocols_ext[i];
+        }
+    }
+    url_protocols_ext[0] = p;
+}
+
 const AVClass *ff_urlcontext_child_class_next(const AVClass *prev)
 {
     int i;
@@ -124,12 +145,23 @@ const URLProtocol **ffurl_get_protocols(const char *whitelist,
     const URLProtocol **ret;
     int i, ret_idx = 0;
 
-    ret = av_mallocz_array(FF_ARRAY_ELEMS(url_protocols), sizeof(*ret));
+    ret = av_mallocz_array(FF_ARRAY_ELEMS(url_protocols) + FF_ARRAY_ELEMS(url_protocols_ext), sizeof(*ret));
     if (!ret)
         return NULL;
 
     for (i = 0; url_protocols[i]; i++) {
         const URLProtocol *up = url_protocols[i];
+
+        if (whitelist && *whitelist && !av_match_name(up->name, whitelist))
+            continue;
+        if (blacklist && *blacklist && av_match_name(up->name, blacklist))
+            continue;
+
+        ret[ret_idx++] = up;
+    }
+
+    for (i = 0; url_protocols_ext[i]; i++) {
+        const URLProtocol *up = url_protocols_ext[i];
 
         if (whitelist && *whitelist && !av_match_name(up->name, whitelist))
             continue;

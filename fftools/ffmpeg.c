@@ -65,6 +65,7 @@
 #include "libavutil/threadmessage.h"
 #include "libavcodec/mathops.h"
 #include "libavformat/os_support.h"
+#include "libavformat/url.h"
 
 # include "libavfilter/avfilter.h"
 # include "libavfilter/buffersrc.h"
@@ -4817,6 +4818,16 @@ static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl)
 {
 }
 
+void veRegisterProtocol(const URLProtocol * p){
+	av_register_protocol(p);
+}
+
+static void registerModule(){
+#ifdef __EMSCRIPTEN__
+    veRegisterProtocol(&ff_wasm_http_protocol);
+#endif
+}
+
 int main(int argc, char **argv)
 {
     int i, ret;
@@ -4842,6 +4853,10 @@ int main(int argc, char **argv)
     avdevice_register_all();
 #endif
     avformat_network_init();
+    avcodec_register_all();
+    avfilter_register_all();
+    av_register_all();
+    registerModule();
 
     show_banner(argc, argv, options);
 
